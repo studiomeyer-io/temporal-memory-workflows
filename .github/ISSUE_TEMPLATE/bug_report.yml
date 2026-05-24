@@ -1,0 +1,111 @@
+name: Bug Report
+description: Report a bug in one of the templates, the memory-adapter, or repo infrastructure
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What happened? One paragraph is fine.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: template
+    attributes:
+      label: Which template / package?
+      description: Pick the area where the bug appears. If it spans multiple, pick the most-affected one and mention the others in the description.
+      options:
+        - T01 — Memory-Aware Agent
+        - T02 — Operator Approval
+        - T03 — Saga Memory Rollback
+        - T04 — Recurring Memory Synthesis
+        - T05 — Multi-Agent Coordination
+        - memory-adapter (packages/memory-adapter)
+        - infrastructure (docker-compose, dev2 cluster)
+        - repo-wide (root tooling, CI, docs)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Minimum command sequence + any payloads. Pretend the next person has a clean clone.
+      placeholder: |
+        1. `cd templates/01-memory-aware-agent`
+        2. `npm run worker` in one terminal
+        3. `npm run client -- "..."` in another
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What happened instead? Stack traces and workflow-execution screenshots welcome.
+    validations:
+      required: true
+
+  - type: input
+    id: temporal-version
+    attributes:
+      label: Temporal Cluster Version
+      description: From `temporal --version` against your cluster, or the image tag if you use the bundled docker-compose.
+      placeholder: "1.25.2 (bundled auto-setup)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node-version
+    attributes:
+      label: Node.js Version
+      options:
+        - "20"
+        - "22"
+        - "other (mention in description)"
+    validations:
+      required: true
+
+  - type: input
+    id: sdk-version
+    attributes:
+      label: Temporal SDK Version
+      description: From `npm ls @temporalio/worker` at the workspace root.
+      placeholder: "1.11.7"
+    validations:
+      required: true
+
+  - type: input
+    id: workflow-id
+    attributes:
+      label: Workflow ID (if known)
+      description: From the Temporal UI or the client output. Helps cross-reference logs.
+      placeholder: "memory-aware-agent-<uuid>"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Worker output + workflow / activity output from the Temporal UI. Scrub secrets first.
+      render: shell
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submit checklist
+      options:
+        - label: I checked existing issues + discussions for duplicates
+          required: true
+        - label: I ran `npm test` against my local clone (or stated which test is unreachable)
+          required: true

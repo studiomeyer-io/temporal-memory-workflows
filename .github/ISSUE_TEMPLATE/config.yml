@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: mailto:matthias10121980meyer@gmail.com
+    about: Please report security issues privately. See SECURITY.md.
+  - name: General Questions
+    url: https://github.com/studiomeyer-io/temporal-memory-workflows/discussions
+    about: Use Discussions for usage questions, not issues.
+  - name: StudioMeyer Memory product
+    url: https://memory.studiomeyer.io
+    about: Issues with the hosted Memory backend (auth, REST API errors, latency) belong upstream.
+  - name: Temporal Server / SDK upstream
+    url: https://github.com/temporalio/sdk-typescript/issues
+    about: Bugs in the Temporal TypeScript SDK or core engine belong upstream — not here.
+  - name: Sister repo (visual workflows)
+    url: https://github.com/studiomeyer-io/n8n-templates
+    about: If your workflow does not need durable execution and you'd rather drag-and-drop in a UI, the n8n templates repo is probably what you want.

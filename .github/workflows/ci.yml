@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: build + test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Root engines.node says ">=20". We exercise 20 + 22 to catch
+        # version-specific regressions in @temporalio/* and vitest.
+        # The @temporalio/testing package boots an in-process Temporal Test
+        # Server (Java) on each test file — no Docker, no live cluster needed
+        # in CI. vitest pool:forks is set in vitest.config.ts so each worker
+        # gets its own JVM lifecycle and tests don't leak handles into each
+        # other.
+        node-version: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      # Java runtime is required because @temporalio/testing spawns the
+      # Temporal Test Server (a Java process bundled inside the package).
+      # ubuntu-latest already ships Temurin via the actions/setup-java
+      # action's cache, but we set up explicitly so test boot is fast and
+      # deterministic across runs.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # `npm ci` is preferred over `npm install` for reproducible CI runs.
+      # The lockfile is committed and pins all @temporalio/* + vitest +
+      # tsx + typescript versions. If a future change relies on
+      # optionalDependencies, switch this line to `npm install --include=optional`
+      # and document why in the same PR.
+      - name: Install dependencies
+        run: npm ci
+
+      # tsc -b across all workspaces. Catches type errors that vitest run
+      # wouldn't (vitest transpiles with esbuild and skips type-checking).
+      - name: Type-check + build (tsc -b)
+        run: npm run build
+
+      # vitest run executes all *.test.ts files across packages + templates.
+      # Each template's tests use TestWorkflowEnvironment.createTimeSkipping()
+      # so day-long workflow waits complete in milliseconds. 45/45 expected
+      # green as of v0.1.1.
+      - name: Run tests
+        run: npm test

@@ -1,0 +1,67 @@
+name: Feature Request
+description: Propose a new template, a memory-adapter enhancement, or repo-wide tooling
+title: "[Feature] "
+labels: ["feature", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What real workflow / business problem does this solve? One paragraph.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Concrete shape of the feature. If it's a new template, sketch the workflow + activities + memory writes.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: target
+    attributes:
+      label: Where does this land?
+      options:
+        - New template (T06+)
+        - Change to existing template (T01/T02/T03/T04/T05)
+        - memory-adapter enhancement
+        - Repo tooling / infrastructure / CI
+        - Documentation
+    validations:
+      required: true
+
+  - type: input
+    id: which-template
+    attributes:
+      label: Which template? (if applicable)
+      placeholder: "T03 — Saga Memory Rollback"
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Did you look at LangGraph, n8n, raw Temporal without memory, etc? What's missing there?
+
+  - type: checkboxes
+    id: iron-rules
+    attributes:
+      label: Iron Rules Compatibility
+      description: Confirm the proposal respects the conventions every template carries (see README "Iron rules" section).
+      options:
+        - label: Workflow code stays deterministic — no `Date.now()`, `fetch`, `Math.random()`, `process.env` inside workflow functions
+        - label: Retry policy is explicit per activity bucket (`critical` vs `bestEffort`), or single bucket if the template genuinely has only must-succeed activities
+        - label: Single source of truth in `shared.ts` (`TEMPLATE_ID`, `TASK_QUEUE`, `WORKFLOW_ID_PREFIX`)
+        - label: Activities accept `MemoryClient` via DI (so tests can swap in `InMemoryMemoryClient`)
+        - label: `rethrowMemoryError` maps 4xx (non-429) `MemoryClientError` to `ApplicationFailure(MemoryAuthError, nonRetryable)`
+        - label: Worker installs SIGTERM + SIGINT handlers
+        - label: Tests use `TestWorkflowEnvironment.createTimeSkipping()` so day-long waits complete in milliseconds
+        - label: No real credentials, no secrets, no live cluster requirement for unit tests
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to submit a PR for this feature
