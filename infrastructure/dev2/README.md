@@ -15,18 +15,25 @@ No Elasticsearch — saves ~1-2 GB RAM. Visibility queries use Postgres standard
 ## Setup
 
 ```bash
-# 1) Create databases (one-time, idempotent)
+# 1) Copy .env.example and fill in real Postgres credentials.
+#    .env is gitignored — never commit real secrets.
+cp .env.example .env
+$EDITOR .env
+
+# 2) Create databases (one-time, idempotent). Adjust user if your Postgres
+#    instance uses a different superuser; the example assumes `dev2-postgres`
+#    with a `matthiasmeyer` superuser.
 docker exec dev2-postgres psql -U matthiasmeyer -d postgres -c "CREATE DATABASE temporal;"
 docker exec dev2-postgres psql -U matthiasmeyer -d postgres -c "CREATE DATABASE temporal_visibility;"
 
-# 2) Start cluster
-cd /home/simple/temporal-memory-workflows/infrastructure/dev2
+# 3) Start cluster
+cd infrastructure/dev2
 docker compose up -d
 
-# 3) Wait for health (auto-setup runs schema migrations on first boot)
+# 4) Wait for health (auto-setup runs schema migrations on first boot)
 docker compose logs -f temporal | grep -i "started"
 
-# 4) Verify
+# 5) Verify
 curl -s http://localhost:8233/api/v1/namespaces | head
 docker exec temporal tctl --address temporal:7233 cluster health
 ```
@@ -57,12 +64,19 @@ docker exec dev2-postgres psql -U matthiasmeyer -d postgres -c "DROP DATABASE te
 | CPU      | ~0.5 core | idle baseline              |
 | Disk     | grows with workflow history; pruned per `NAMESPACE_RETENTION=72h` |
 
-## Production Hardening (later)
+## Security Notes
 
-- Pin `temporalio/auto-setup` to checksummed digest, not float tag
+- **Web UI has no authentication.** The compose binds `temporal-ui` to `127.0.0.1:8233`, so it is only reachable from the host. On a multi-user server, any user with SSH access can still port-forward and view/terminate workflows. For shared environments add Cloudflare Tunnel + Access (or equivalent) before exposing the UI.
+- **No container resource limits** are set. `temporalio/auto-setup` can peak at 2-4 GB RAM during schema initialization. On laptops with <8 GB total, consider adding `deploy.resources.limits.memory: 2g` under each service.
+
+## Production Hardening
+
+- Pin `temporalio/auto-setup` to a checksummed digest, not the float tag
 - Move from `auto-setup` to discrete `temporalio/server` + manual schema upgrades
 - Add mTLS between Temporal services
-- Cloudflare Tunnel + Access for Web UI (do NOT expose 8233 publicly without auth)
-- Switch to dedicated Postgres role with `temporal_*` DB-scoped grants instead of superuser
+- Put the Web UI behind authentication (Cloudflare Tunnel + Access, OIDC via `TEMPORAL_AUTH_ENABLED=true`, etc.)
+- Switch to a dedicated Postgres role with `temporal_*` DB-scoped grants instead of a superuser
+- Provision the `memory-workflows` namespace explicitly (`tctl namespace register --retention 72h memory-workflows`) — `NAMESPACE_RETENTION` only applies to the auto-created `default` namespace
+- Add resource limits (`mem_limit`, `cpus`) to each service for capacity planning
 
-See `docs/claude/temporal.md` in nex-hq for the canonical lifecycle doc.
+See the [Temporal self-hosted deployment guide](https://docs.temporal.io/production-deployment/self-hosted-guide) for the upstream reference.

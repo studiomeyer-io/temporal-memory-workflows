@@ -21,4 +21,9 @@ export interface AgentTaskResult {
   learningId: string | null;
 }
 
-export const TASK_QUEUE = "memory-aware-agent";
+/**
+ * Task queue is namespaced per template (t01, t02, ...) to keep workers from
+ * stealing tasks across templates when several run against the same cluster.
+ * Future templates use `t02-...`, `t03-...`, etc.
+ */
+export const TASK_QUEUE = "t01-memory-aware-agent";

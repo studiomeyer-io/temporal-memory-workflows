@@ -42,18 +42,20 @@ That's Temporal's job. This repo packages reusable templates that pair Temporal 
 ## Quick Start
 
 ```bash
-# 1) Start Temporal cluster (creates DBs in existing dev2-postgres)
+# 1) Configure + start the Temporal cluster
 cd infrastructure/dev2
+cp .env.example .env          # fill in Postgres credentials
 docker compose up -d
 
-# 2) Install deps
+# 2) Install deps + build all workspaces
 cd ../..
 npm install
+npm run build
 
-# 3) Run tests (uses Temporal test server, no live cluster needed for unit tests)
+# 3) Run tests (uses Temporal test server — no live cluster needed for unit tests)
 npm test
 
-# 4) Run T01 against live cluster
+# 4) Run T01 against the live cluster
 cd templates/01-memory-aware-agent
 TEMPORAL_ADDRESS=127.0.0.1:7233 \
 NEX_MEMORY_URL=https://memory.studiomeyer.io \

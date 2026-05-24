@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/memory-adapter" },
+    { "path": "templates/01-memory-aware-agent" }
+  ]
+}

@@ -9,11 +9,11 @@
     "templates/*"
   ],
   "scripts": {
-    "build": "tsc -b packages/memory-adapter templates/01-memory-aware-agent",
+    "build": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc -b --pretty packages/memory-adapter templates/01-memory-aware-agent",
-    "clean": "tsc -b --clean packages/memory-adapter templates/01-memory-aware-agent"
+    "lint": "tsc -b --pretty",
+    "clean": "tsc -b --clean"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

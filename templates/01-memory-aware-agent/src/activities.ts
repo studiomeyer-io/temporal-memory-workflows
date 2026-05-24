@@ -1,9 +1,32 @@
-import { log } from "@temporalio/activity";
+import { log, ApplicationFailure } from "@temporalio/activity";
 import type {
   LearningCategory,
   MemoryClient,
   SearchHit,
 } from "@temporal-memory/memory-adapter";
+import { MemoryClientError } from "@temporal-memory/memory-adapter";
+
+/**
+ * Map a MemoryClientError to a Temporal ApplicationFailure so the workflow's
+ * `nonRetryableErrorTypes` policy can short-circuit auth/validation problems
+ * instead of burning retries on errors that will never resolve.
+ *
+ * - 4xx (except 429): non-retryable → MemoryAuthError
+ * - 429 + 5xx + network: retryable, falls through as-is
+ */
+function rethrowMemoryError(err: unknown, op: string): never {
+  if (err instanceof MemoryClientError && typeof err.status === "number") {
+    const isClientError = err.status >= 400 && err.status < 500 && err.status !== 429;
+    if (isClientError) {
+      throw ApplicationFailure.create({
+        message: `${op} failed with ${err.status}: ${err.message}`,
+        type: "MemoryAuthError",
+        nonRetryable: true,
+      });
+    }
+  }
+  throw err;
+}
 
 export interface ActivitySearchInput {
   question: string;
@@ -51,10 +74,14 @@ export function createActivities(deps: ActivityDeps) {
   return {
     async searchMemory(input: ActivitySearchInput): Promise<SearchHit[]> {
       log.info("searchMemory", { question: input.question, project: input.project });
-      return deps.memory.search(input.question, {
-        project: input.project,
-        limit: input.limit ?? 10,
-      });
+      try {
+        return await deps.memory.search(input.question, {
+          project: input.project,
+          limit: input.limit ?? 10,
+        });
+      } catch (err) {
+        rethrowMemoryError(err, "searchMemory");
+      }
     },
 
     async reason(input: { question: string; hits: SearchHit[] }): Promise<string> {
@@ -64,13 +91,17 @@ export function createActivities(deps: ActivityDeps) {
 
     async persistLearning(input: ActivityLearnInput): Promise<{ id: string }> {
       log.info("persistLearning", { contentLength: input.content.length });
-      const res = await deps.memory.learn({
-        content: input.content,
-        category: input.category ?? "workflow",
-        project: input.project,
-        tags: input.tags,
-      });
-      return { id: res.id };
+      try {
+        const res = await deps.memory.learn({
+          content: input.content,
+          category: input.category ?? "workflow",
+          project: input.project,
+          tags: input.tags,
+        });
+        return { id: res.id };
+      } catch (err) {
+        rethrowMemoryError(err, "persistLearning");
+      }
     },
   };
 }

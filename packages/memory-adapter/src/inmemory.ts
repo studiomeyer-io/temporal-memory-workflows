@@ -51,9 +51,9 @@ export class InMemoryMemoryClient implements MemoryClient {
     }
   }
 
-  /** Test-only: read all stored items. */
+  /** Test-only: read all stored items (deep-copied so mutation does not leak into internal state). */
   dump(): readonly StoredItem[] {
-    return [...this.items];
+    return this.items.map((item) => ({ ...item }));
   }
 
   /** Test-only: drop everything. */
@@ -66,13 +66,20 @@ export class InMemoryMemoryClient implements MemoryClient {
     const limit = options.limit ?? 20;
     const needle = query.toLowerCase();
     const now = Date.now();
+    // Recency decay constant: items lose half their score after ~24h. Tweak the
+    // 24 to change the half-life. Real backends (HostedMemoryClient) use the
+    // server's full ranking pipeline (BM25 + trigram + semantic), not this stub.
+    const RECENCY_HALF_LIFE_HOURS = 24;
     const scored: Array<{ score: number; hit: SearchHit }> = [];
     for (const item of this.items) {
       const content = item.type === "decision" ? item.decision : item.content;
       if (!content.toLowerCase().includes(needle)) continue;
-      if (options.project && item.project && item.project !== options.project) continue;
+      // Project filter: if caller scoped to a project, exclude any item whose project
+      // differs OR is unset. Previously the `item.project && ...` guard let project-less
+      // items leak into project-scoped searches (F5, Critic, S1183).
+      if (options.project && item.project !== options.project) continue;
       const ageHours = (now - item.createdAt) / 3_600_000;
-      const recency = 1 / (1 + ageHours / 24);
+      const recency = 1 / (1 + ageHours / RECENCY_HALF_LIFE_HOURS);
       scored.push({
         score: recency,
         hit: {

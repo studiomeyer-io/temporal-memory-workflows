@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "T01 — Temporal workflow that reads memory, reasons, and writes a learning back. Durable across crashes.",
   "license": "MIT",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc -b",

@@ -2,12 +2,24 @@ import { proxyActivities, log, ApplicationFailure } from "@temporalio/workflow";
 import type { Activities } from "./activities.js";
 import type { AgentTaskInput, AgentTaskResult } from "./shared.js";
 
-const activities = proxyActivities<Activities>({
-  startToCloseTimeout: "1 minute",
+// Critical-path activities (searchMemory, reason) — must succeed or the workflow fails.
+// nonRetryableErrorTypes covers auth and validation errors that won't resolve via retry.
+const critical = proxyActivities<Pick<Activities, "searchMemory" | "reason">>({
+  startToCloseTimeout: "30 seconds",
   retry: {
     initialInterval: "1s",
     maximumAttempts: 3,
     backoffCoefficient: 2,
+    nonRetryableErrorTypes: ["MemoryAuthError", "InvalidInput"],
+  },
+});
+
+// Best-effort persist — never delays the workflow's success path.
+// Single attempt, short timeout, failure swallowed via try/catch in the workflow body.
+const bestEffort = proxyActivities<Pick<Activities, "persistLearning">>({
+  startToCloseTimeout: "10 seconds",
+  retry: {
+    maximumAttempts: 1,
   },
 });
 
@@ -28,17 +40,17 @@ export async function memoryAwareAgentWorkflow(input: AgentTaskInput): Promise<A
   }
   log.info("memoryAwareAgentWorkflow start", { taskId: input.taskId });
 
-  const hits = await activities.searchMemory({
+  const hits = await critical.searchMemory({
     question: input.question,
     project: input.memoryProject,
     limit: input.memoryLimit,
   });
 
-  const answer = await activities.reason({ question: input.question, hits });
+  const answer = await critical.reason({ question: input.question, hits });
 
   let learningId: string | null = null;
   try {
-    const persisted = await activities.persistLearning({
+    const persisted = await bestEffort.persistLearning({
       content: `Q: ${input.question}\nA: ${answer}`,
       category: "workflow",
       project: input.memoryProject,
