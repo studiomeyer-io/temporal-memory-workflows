@@ -4,6 +4,7 @@
     { "path": "packages/memory-adapter" },
     { "path": "templates/01-memory-aware-agent" },
     { "path": "templates/02-operator-approval" },
-    { "path": "templates/03-saga-memory-rollback" }
+    { "path": "templates/03-saga-memory-rollback" },
+    { "path": "templates/04-recurring-memory-synthesis" }
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "name": "@temporal-memory/t04-recurring-memory-synthesis",
+  "version": "0.0.1",
+  "description": "T04 — Recurring workflow that aggregates the last N days of memory + writes a synthesis decision back. Scheduled via Temporal's Schedule API.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "worker": "node --enable-source-maps dist/worker.js",
+    "client": "node --enable-source-maps dist/client.js",
+    "dev:worker": "node --import tsx/esm src/worker.ts",
+    "dev:client": "node --import tsx/esm src/client.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@temporal-memory/memory-adapter": "*",
+    "@temporalio/activity": "^1.11.7",
+    "@temporalio/client": "^1.11.7",
+    "@temporalio/worker": "^1.11.7",
+    "@temporalio/workflow": "^1.11.7"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "^1.11.7",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
