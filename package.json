@@ -1,0 +1,26 @@
+{
+  "name": "temporal-memory-workflows",
+  "version": "0.0.1",
+  "description": "Durable Temporal workflow templates with Nex Memory integration",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "templates/*"
+  ],
+  "scripts": {
+    "build": "tsc -b packages/memory-adapter templates/01-memory-aware-agent",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc -b --pretty packages/memory-adapter templates/01-memory-aware-agent",
+    "clean": "tsc -b --clean packages/memory-adapter templates/01-memory-aware-agent"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

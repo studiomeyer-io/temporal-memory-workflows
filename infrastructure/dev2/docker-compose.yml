@@ -1,0 +1,62 @@
+# Temporal Server self-hosted — minimal Postgres-only Setup
+# Stand 2026-05-24 (Session 1183), pairs with existing dev2-postgres on `simple_default` network.
+#
+# Topology:
+#   temporal (auto-setup)  -> grpc 127.0.0.1:7233
+#   temporal-ui            -> http 127.0.0.1:8233 (8080 belegt von n8n)
+#   persistence            -> dev2-postgres:5432/temporal + /temporal_visibility
+#   visibility             -> Postgres-based (no Elasticsearch, saves ~1-2 GB RAM)
+#
+# Start:  docker compose -f docker-compose.yml --env-file .env up -d
+# Stop:   docker compose -f docker-compose.yml down
+# Logs:   docker compose -f docker-compose.yml logs -f temporal
+
+services:
+  temporal:
+    container_name: temporal
+    image: temporalio/auto-setup:1.28.0
+    restart: unless-stopped
+    networks:
+      - simple_default
+    ports:
+      - "127.0.0.1:7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PWD=${POSTGRES_PWD}
+      - POSTGRES_SEEDS=dev2-postgres
+      - DBNAME=temporal
+      - VISIBILITY_DBNAME=temporal_visibility
+      - ENABLE_ES=false
+      - NAMESPACE_RETENTION=72h
+      - LOG_LEVEL=info
+      # NOTE: TEMPORAL_BROADCAST_ADDRESS bewusst weggelassen.
+      # Ringpop validiert das als IPv4-String — Hostname "temporal" → "ringpop config malformed".
+      # Wenn nicht gesetzt, ermittelt auto-setup die Container-IP selbst (172.18.x.y).
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  temporal-ui:
+    container_name: temporal-ui
+    image: temporalio/ui:2.40.0
+    restart: unless-stopped
+    depends_on:
+      - temporal
+    networks:
+      - simple_default
+    ports:
+      - "127.0.0.1:8233:8080"
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:8233
+      - TEMPORAL_UI_PORT=8080
+      - TEMPORAL_DEFAULT_NAMESPACE=default
+
+networks:
+  simple_default:
+    external: true

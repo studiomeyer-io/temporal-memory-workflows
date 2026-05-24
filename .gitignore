@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+coverage/
+
+# Infrastructure secrets — never commit
+infrastructure/**/.env
+infrastructure/**/secrets/
+
+# Editor
+.vscode/
+.idea/
