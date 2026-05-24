@@ -2,7 +2,7 @@
 
 Durable [Temporal](https://temporal.io) workflow templates with [StudioMeyer Memory](https://memory.studiomeyer.io) integration. Built so AI agents and long-running pipelines have one shared brain across crashes, restarts, and weeks of execution.
 
-> **Status:** v0.0.1 — local dev preview. Not on npm yet. Open Source release after v0.1.0 stabilizes.
+> **Status:** v0.1.0 — all 5 templates live-verified against a self-hosted cluster. 45/45 tests green. Pre-npm; clone or fork to use.
 
 ## Why this exists
 
@@ -10,15 +10,15 @@ LangGraph is great for short LLM-centric chains. n8n is great for visual determi
 
 That's Temporal's job. This repo packages reusable templates that pair Temporal workflows with persistent agent memory, so the workflow's state (Temporal) and the agent's knowledge (Memory) stay consistent.
 
-## Templates (v0.1.0 roadmap)
+## Templates
 
 | ID | Name | Status | What it shows |
 |----|------|--------|---------------|
-| T01 | Memory-Aware Agent-Workflow | **building** | Read memory → reason with LLM → write memory, durable across crashes |
-| T02 | Operator-Approval with Memory Trail | planned | `interrupt()`-style HITL with audit trail in memory |
-| T03 | Saga with Memory Rollback | planned | Compensation steps that record failure patterns to memory |
-| T04 | Recurring Memory Synthesis | planned | Cron workflow that aggregates the week's learnings |
-| T05 | Multi-Agent Coordination | planned | Squad pattern with shared durable memory |
+| [T01](./templates/01-memory-aware-agent/) | Memory-Aware Agent | ✅ ready | Read memory → reason → write memory, durable across worker crashes |
+| [T02](./templates/02-operator-approval/) | Operator Approval | ✅ ready | `defineSignal` + `defineQuery` + `condition()` for human-in-the-loop with audit trail |
+| [T03](./templates/03-saga-memory-rollback/) | Saga with Memory Rollback | ✅ ready | LIFO compensations + `mistake`-tagged memory trail for every rollback |
+| [T04](./templates/04-recurring-memory-synthesis/) | Recurring Memory Synthesis | ✅ ready | Temporal Schedule API + multi-topic aggregation + LLM synthesis hook |
+| [T05](./templates/05-multi-agent-coordination/) | Multi-Agent Coordination | ✅ ready | `executeChild` × N parallel + shared `coord:<id>` memory tag for full-trail queries |
 
 ## Stack
 
@@ -32,11 +32,15 @@ That's Temporal's job. This repo packages reusable templates that pair Temporal 
 ```
 .
 ├── infrastructure/
-│   └── dev2/                          # Docker Compose for local Temporal cluster
+│   └── dev2/                              # Docker Compose for local Temporal cluster
 ├── packages/
-│   └── memory-adapter/                # Nex Memory bridge (search / learn / decide)
+│   └── memory-adapter/                    # Nex Memory bridge (search / learn / decide)
 └── templates/
-    └── 01-memory-aware-agent/         # T01 — full worker + client + tests
+    ├── 01-memory-aware-agent/             # T01 — read → reason → write
+    ├── 02-operator-approval/              # T02 — signal-based HITL with timeout
+    ├── 03-saga-memory-rollback/           # T03 — reserve → charge → ship + compensations
+    ├── 04-recurring-memory-synthesis/     # T04 — cron-scheduled aggregation
+    └── 05-multi-agent-coordination/       # T05 — parent + N children + shared tag
 ```
 
 ## Quick Start
@@ -79,6 +83,21 @@ Templates depend only on the interface — swap backends via DI.
 ## License
 
 MIT. See [`LICENSE`](./LICENSE).
+
+## Iron rules (carried by every template)
+
+All five templates share the same conventions so reading one of them prepares you to read the others:
+
+- **Workflow code is deterministic.** No `Date.now()`, `fetch`, `Math.random()`, or `process.env` inside workflow functions. All side-effects happen in activities.
+- **Two `proxyActivities` buckets** per workflow — `critical` (3 attempts, `nonRetryableErrorTypes`) for must-succeed activities, `bestEffort` (1 attempt, short timeout) for fire-and-forget notifications.
+- **Single source of truth** for naming in `shared.ts`: `TEMPLATE_ID`, `TASK_QUEUE`, `WORKFLOW_ID_PREFIX`. Rename in one place and everything follows.
+- **Activities accept a `MemoryClient` via DI** so production swaps in `HostedMemoryClient` (REST) and tests swap in `InMemoryMemoryClient` (local mock). Same interface in both.
+- **`rethrowMemoryError` helper** maps 4xx (non-429) `MemoryClientError` to `ApplicationFailure(MemoryAuthError, nonRetryable)` so Temporal short-circuits auth errors instead of burning retries.
+- **Worker installs SIGTERM + SIGINT handlers** for graceful shutdown.
+- **Tests use `TestWorkflowEnvironment.createTimeSkipping()`** — workflows that wait for days complete in milliseconds.
+- **Optional `infrastructure/dev2/.env`** is gitignored. Never commit real Postgres credentials.
+
+Need to add a sixth template? Follow the `/temporal-template` recipe (Claude Code skill) — same conventions, copy T01 as the skeleton.
 
 ## Related
 
