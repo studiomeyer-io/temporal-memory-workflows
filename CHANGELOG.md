@@ -27,7 +27,7 @@ Initial public-shape release. All five templates live-verified against a self-ho
 These conventions are enforced across all five templates and the `/temporal-template` Claude Code skill:
 
 1. Workflow code is deterministic; non-deterministic calls (`Date.now`, `fetch`, `Math.random`, `process.env`) happen only in activities.
-2. Two `proxyActivities` buckets per workflow — `critical` and `bestEffort`.
+2. Retry policy is explicit per activity bucket. Two buckets (`critical` + `bestEffort`) when the template has fire-and-forget side-effects (T01, T02, T05); one `critical` bucket is correct when every activity must succeed (T03 saga, T04 cron synthesis).
 3. Single source of truth for naming in `shared.ts` (`TEMPLATE_ID`, `TASK_QUEUE`, `WORKFLOW_ID_PREFIX`).
 4. Activities accept `MemoryClient` (and optional `Reasoner`/`Notifier`/`Executor`/`OrderProcessor`/`Summarizer`/`AgentWorker`) via DI.
 5. `rethrowMemoryError` helper maps 4xx (non-429) to `ApplicationFailure(MemoryAuthError, nonRetryable)`.

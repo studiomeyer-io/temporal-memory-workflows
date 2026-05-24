@@ -6,7 +6,7 @@ import type {
   CoordinatorInput,
   CoordinatorResult,
 } from "./shared.js";
-import { MAX_SUBTASKS, WORKFLOW_ID_PREFIX } from "./shared.js";
+import { MAX_SUBTASKS, TASK_QUEUE, WORKFLOW_ID_PREFIX } from "./shared.js";
 
 const critical = proxyActivities<
   Pick<
@@ -119,6 +119,11 @@ export async function multiAgentCoordinatorWorkflow(
     };
     return executeChild(agentTaskWorkflow, {
       args: [childInput],
+      // Explicit taskQueue keeps the parent/child contract visible. By default
+      // executeChild inherits the parent's task queue — we set it explicitly
+      // so a future split (children on a separate worker) is a one-line change
+      // instead of a silent inheritance trap.
+      taskQueue: TASK_QUEUE,
       workflowId: `${WORKFLOW_ID_PREFIX}-child-${input.coordinationId}-${sub.subTaskId}`,
     });
   });

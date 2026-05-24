@@ -89,7 +89,7 @@ MIT. See [`LICENSE`](./LICENSE).
 All five templates share the same conventions so reading one of them prepares you to read the others:
 
 - **Workflow code is deterministic.** No `Date.now()`, `fetch`, `Math.random()`, or `process.env` inside workflow functions. All side-effects happen in activities.
-- **Two `proxyActivities` buckets** per workflow — `critical` (3 attempts, `nonRetryableErrorTypes`) for must-succeed activities, `bestEffort` (1 attempt, short timeout) for fire-and-forget notifications.
+- **Retry policy is explicit per activity bucket.** Must-succeed activities live in a `critical` bucket (3 attempts + `nonRetryableErrorTypes`); optional fire-and-forget activities live in a `bestEffort` bucket (1 attempt, short timeout). When a template has only must-succeed activities (T03 saga, T04 cron synthesis), one `critical` bucket is the correct choice — do not invent a fake `bestEffort`. T01, T02, and T05 split into two buckets because they have genuine fire-and-forget side-effects.
 - **Single source of truth** for naming in `shared.ts`: `TEMPLATE_ID`, `TASK_QUEUE`, `WORKFLOW_ID_PREFIX`. Rename in one place and everything follows.
 - **Activities accept a `MemoryClient` via DI** so production swaps in `HostedMemoryClient` (REST) and tests swap in `InMemoryMemoryClient` (local mock). Same interface in both.
 - **`rethrowMemoryError` helper** maps 4xx (non-429) `MemoryClientError` to `ApplicationFailure(MemoryAuthError, nonRetryable)` so Temporal short-circuits auth errors instead of burning retries.

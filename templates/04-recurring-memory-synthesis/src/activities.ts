@@ -69,7 +69,11 @@ export function createActivities(deps: ActivityDeps) {
             limit: 20,
           });
         } catch (err) {
-          rethrowMemoryError(err, `gatherLearnings(${topic})`);
+          // Note: a single topic's auth/validation failure aborts the entire
+          // gatherLearnings activity (no partial-results mode). If you need
+          // per-topic isolation, wrap this catch with `clusters.push({...empty});
+          // continue;` — but be aware that hides downstream auth misconfiguration.
+          return rethrowMemoryError(err, `gatherLearnings(${topic})`);
         }
         for (const h of hits) seenIds.add(h.id);
         clusters.push({

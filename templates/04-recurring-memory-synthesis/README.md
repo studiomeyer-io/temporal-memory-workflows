@@ -91,6 +91,12 @@ Temporal supports two cron-like mechanisms in the TypeScript SDK:
 
 T04 uses the modern Schedule API. The `client.ts schedule-create` subcommand wraps it.
 
+## Failure semantics
+
+`gatherLearnings` runs one memory search per topic. If a single topic search throws an auth/validation error (4xx, except 429), the activity fails entirely — there is no partial-result mode. The downstream `synthesize` + `persistSynthesis` activities never run. The Schedule's catchup window will retry on the next fire.
+
+If you want per-topic isolation (one bad topic should not poison the rest), modify the catch block in `activities.ts` to push an empty `SynthesisCluster` and `continue` instead of calling `rethrowMemoryError`. The trade-off: silent auth misconfiguration for one topic disappears into a quiet zero-hit cluster.
+
 ## Why no `continueAsNew`?
 
 `continueAsNew` matters when a single workflow execution would otherwise accumulate too much event history. T04's per-run shape — fetch, summarize, persist, return — keeps each history small. The Schedule is the long-lived state, not the workflow itself. Use `continueAsNew` if you need to maintain in-workflow state (e.g. counters, dedup caches) across fires.
