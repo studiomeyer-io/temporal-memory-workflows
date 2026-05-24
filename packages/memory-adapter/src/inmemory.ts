@@ -74,10 +74,12 @@ export class InMemoryMemoryClient implements MemoryClient {
     for (const item of this.items) {
       const content = item.type === "decision" ? item.decision : item.content;
       if (!content.toLowerCase().includes(needle)) continue;
-      // Project filter: if caller scoped to a project, exclude any item whose project
-      // differs OR is unset. Previously the `item.project && ...` guard let project-less
-      // items leak into project-scoped searches (F5, Critic, S1183).
-      if (options.project && item.project !== options.project) continue;
+      // Project filter: if caller scoped to a project (including `""`), exclude any
+      // item whose project differs OR is unset. Previously the `item.project && ...`
+      // guard let project-less items leak (F5 S1183). Welle 3 (F-W2-01) tightens
+      // the outer guard from truthy-check to `!= null` so `options.project = ""`
+      // is treated as an explicit empty-string scope rather than "no filter".
+      if (options.project != null && item.project !== options.project) continue;
       const ageHours = (now - item.createdAt) / 3_600_000;
       const recency = 1 / (1 + ageHours / RECENCY_HALF_LIFE_HOURS);
       scored.push({

@@ -32,6 +32,17 @@ async function run() {
     activities: createActivities({ memory }),
   });
 
+  // Graceful shutdown: drain in-flight activities + release the Temporal slot.
+  // @temporalio/worker installs a default SIGTERM handler internally, but adding
+  // SIGINT (Ctrl+C in dev) and being explicit makes the intent visible at the
+  // call site so future contributors know shutdown is wired up.
+  const shutdown = (signal: string) => {
+    console.log(`[worker] ${signal} received — shutting down gracefully`);
+    worker.shutdown();
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
+
   console.log(`[worker] connected to ${address}, namespace=${namespace}, queue=${TASK_QUEUE}`);
   await worker.run();
 }

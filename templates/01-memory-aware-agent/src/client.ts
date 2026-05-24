@@ -1,7 +1,7 @@
 import { Client, Connection } from "@temporalio/client";
 import { randomUUID } from "node:crypto";
 import { memoryAwareAgentWorkflow } from "./workflows.js";
-import { TASK_QUEUE } from "./shared.js";
+import { TASK_QUEUE, WORKFLOW_ID_PREFIX } from "./shared.js";
 
 async function main() {
   const question = process.argv.slice(2).join(" ").trim();
@@ -26,7 +26,7 @@ async function main() {
       memoryProject: process.env.NEX_MEMORY_PROJECT ?? "temporal-memory-workflows",
     }],
     taskQueue: TASK_QUEUE,
-    workflowId: `t01-${taskId}`,
+    workflowId: `${WORKFLOW_ID_PREFIX}-${taskId}`,
   });
 
   console.log(`[client] workflowId=${handle.workflowId}, runId=${handle.firstExecutionRunId}`);

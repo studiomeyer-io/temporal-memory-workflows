@@ -12,7 +12,14 @@ import { MemoryClientError } from "@temporal-memory/memory-adapter";
  * instead of burning retries on errors that will never resolve.
  *
  * - 4xx (except 429): non-retryable → MemoryAuthError
- * - 429 + 5xx + network: retryable, falls through as-is
+ * - 429 (rate limit): retryable — Temporal backoff will help
+ * - 5xx: retryable — transient server issue
+ * - `status === undefined` (network error, abort, parse error from HostedMemoryClient
+ *   wrapping a non-HTTP exception): retryable — Temporal handles transient backend hiccups
+ *
+ * Declared `never` so TypeScript's control-flow analysis knows the caller is
+ * unreachable past this point. Callers should still write `return rethrowMemoryError(...)`
+ * to remain robust if the return type is ever loosened.
  */
 function rethrowMemoryError(err: unknown, op: string): never {
   if (err instanceof MemoryClientError && typeof err.status === "number") {
@@ -80,7 +87,7 @@ export function createActivities(deps: ActivityDeps) {
           limit: input.limit ?? 10,
         });
       } catch (err) {
-        rethrowMemoryError(err, "searchMemory");
+        return rethrowMemoryError(err, "searchMemory");
       }
     },
 
@@ -100,7 +107,7 @@ export function createActivities(deps: ActivityDeps) {
         });
         return { id: res.id };
       } catch (err) {
-        rethrowMemoryError(err, "persistLearning");
+        return rethrowMemoryError(err, "persistLearning");
       }
     },
   };

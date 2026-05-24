@@ -52,6 +52,36 @@ describe("InMemoryMemoryClient", () => {
     const hits = await memory.search("needle", { limit: 2 });
     expect(hits).toHaveLength(2);
   });
+
+  // Welle 1 F5 regression: project-less items must be excluded from project-scoped search.
+  it("excludes project-less items from project-scoped search (F5 regression)", async () => {
+    const memory = new InMemoryMemoryClient();
+    await memory.learn({ content: "shared keyword gamma", category: "insight" });
+    await memory.learn({ content: "shared keyword delta", category: "insight", project: "c" });
+    const onlyC = await memory.search("shared", { project: "c" });
+    expect(onlyC).toHaveLength(1);
+    expect(onlyC[0]!.project).toBe("c");
+  });
+
+  // Welle 3 F-W2-01 regression: options.project = "" is an explicit scope, not "no filter".
+  it("treats options.project='' as an explicit scope (F-W2-01 regression)", async () => {
+    const memory = new InMemoryMemoryClient();
+    await memory.learn({ content: "shared keyword empty", category: "insight" });
+    await memory.learn({ content: "shared keyword named", category: "insight", project: "x" });
+    const explicitEmpty = await memory.search("shared", { project: "" });
+    // No items have project="" so we expect zero hits, NOT a leak of all items.
+    expect(explicitEmpty).toHaveLength(0);
+  });
+
+  // Welle 1 F14 regression: dump() returns deep copies so test mutation doesn't leak.
+  it("dump() returns deep copies (F14 regression)", async () => {
+    const memory = new InMemoryMemoryClient();
+    await memory.learn({ content: "original", category: "pattern" });
+    const dumped = memory.dump();
+    (dumped[0] as { content: string }).content = "mutated";
+    const fresh = memory.dump();
+    expect(fresh[0]!.content).toBe("original");
+  });
 });
 
 describe("HostedMemoryClient", () => {
@@ -143,5 +173,35 @@ describe("HostedMemoryClient", () => {
     await memory.learn({ content: "y", category: "insight" });
     const init = fakeFetch.mock.calls[0]![1] as RequestInit;
     expect(JSON.parse(init.body as string).project).toBe("fallback-project");
+  });
+
+  // Welle 3: MemoryClientError surfaces status from 5xx unchanged (retryable downstream).
+  it("preserves status code on 5xx errors so callers can classify retryability", async () => {
+    const fakeFetch = buildFetch([{ status: 503, body: { error: "service unavailable" } }]);
+    const memory = new HostedMemoryClient({
+      apiKey: "sk_x",
+      fetch: fakeFetch as unknown as typeof fetch,
+    });
+    await expect(memory.search("q")).rejects.toMatchObject({
+      name: "MemoryClientError",
+      status: 503,
+    });
+  });
+
+  // Welle 3: a parse error after a 200 response wraps to MemoryClientError WITHOUT status,
+  // which the activity-layer rethrowMemoryError must treat as retryable (no MemoryAuthError).
+  it("throws MemoryClientError without status when response is malformed", async () => {
+    const fakeFetch = buildFetch([{ body: { data: {} } }]);
+    const memory = new HostedMemoryClient({
+      apiKey: "sk_x",
+      fetch: fakeFetch as unknown as typeof fetch,
+    });
+    try {
+      await memory.learn({ content: "x", category: "pattern" });
+      throw new Error("expected throw");
+    } catch (err) {
+      expect(err).toBeInstanceOf(MemoryClientError);
+      expect((err as MemoryClientError).status).toBeUndefined();
+    }
   });
 });
