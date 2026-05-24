@@ -1,0 +1,30 @@
+{
+  "name": "@temporal-memory/t02-operator-approval",
+  "version": "0.0.1",
+  "description": "T02 — Human-in-the-loop approval workflow with durable signals, query, and memory audit trail.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "worker": "node --enable-source-maps dist/worker.js",
+    "client": "node --enable-source-maps dist/client.js",
+    "dev:worker": "node --import tsx/esm src/worker.ts",
+    "dev:client": "node --import tsx/esm src/client.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@temporal-memory/memory-adapter": "*",
+    "@temporalio/activity": "^1.11.7",
+    "@temporalio/client": "^1.11.7",
+    "@temporalio/worker": "^1.11.7",
+    "@temporalio/workflow": "^1.11.7"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "^1.11.7",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

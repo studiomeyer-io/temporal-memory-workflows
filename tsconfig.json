@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/memory-adapter" },
-    { "path": "templates/01-memory-aware-agent" }
+    { "path": "templates/01-memory-aware-agent" },
+    { "path": "templates/02-operator-approval" }
   ]
 }
