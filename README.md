@@ -1,3 +1,7 @@
+<!-- studiomeyer-mcp-stack-banner:start -->
+> **Part of the [StudioMeyer MCP Stack](https://studiomeyer.io)** — Built in Mallorca 🌴 · ⭐ if you use it
+<!-- studiomeyer-mcp-stack-banner:end -->
+
 # temporal-memory-workflows
 
 Durable [Temporal](https://temporal.io) workflow templates with [StudioMeyer Memory](https://memory.studiomeyer.io) integration. Built so AI agents and long-running pipelines have one shared brain across crashes, restarts, and weeks of execution.
