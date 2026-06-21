@@ -55,7 +55,7 @@ jobs:
 
       # vitest run executes all *.test.ts files across packages + templates.
       # Each template's tests use TestWorkflowEnvironment.createTimeSkipping()
-      # so day-long workflow waits complete in milliseconds. 45/45 expected
+      # so day-long workflow waits complete in milliseconds. 49/49 expected
       # green as of v0.1.1.
       - name: Run tests
         run: npm test

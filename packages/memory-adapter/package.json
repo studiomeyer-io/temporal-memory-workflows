@@ -1,6 +1,6 @@
 {
   "name": "@temporal-memory/memory-adapter",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "Nex Memory bridge for Temporal workflows — pluggable hosted/local/in-memory backends",
   "license": "MIT",
   "type": "module",

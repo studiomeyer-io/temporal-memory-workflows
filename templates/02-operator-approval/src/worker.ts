@@ -1,4 +1,5 @@
 import { Worker, NativeConnection } from "@temporalio/worker";
+import { fileURLToPath } from "node:url";
 import { HostedMemoryClient, InMemoryMemoryClient } from "@temporal-memory/memory-adapter";
 import { createActivities } from "./activities.js";
 import { TASK_QUEUE } from "./shared.js";
@@ -28,7 +29,10 @@ async function run() {
     connection,
     namespace,
     taskQueue: TASK_QUEUE,
-    workflowsPath: new URL("./workflows.js", import.meta.url).pathname,
+    // fileURLToPath (not URL.pathname): on Windows `.pathname` yields `/C:/...`,
+    // an invalid filesystem path that breaks worker boot. The test files already
+    // use this helper — workers must match.
+    workflowsPath: fileURLToPath(new URL("./workflows.js", import.meta.url)),
     activities: createActivities({ memory }),
   });
 

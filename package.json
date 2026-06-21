@@ -1,6 +1,6 @@
 {
   "name": "temporal-memory-workflows",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "Durable Temporal workflow templates with Nex Memory integration",
   "private": true,
   "license": "MIT",
