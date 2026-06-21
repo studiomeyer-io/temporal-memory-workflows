@@ -133,6 +133,13 @@ describe("orderSagaWorkflow", () => {
     expect("category" in dumped[0]! ? dumped[0]!.category : "").toBe("mistake");
     const content = "content" in dumped[0]! ? dumped[0]!.content : "";
     expect(content).toContain("failedStep" in dumped[0]! ? "" : "chargePayment");
+    // All compensations succeeded here → the rollback record must take the
+    // success branch and must NOT carry the `compensation-failure` tag (that tag
+    // is reserved for orders that need manual reconciliation).
+    expect(content).toContain("All compensations succeeded");
+    const tags = "tags" in dumped[0]! ? (dumped[0]!.tags ?? []) : [];
+    expect(tags).not.toContain("compensation-failure");
+    expect(tags).toContain("failed-step:chargePayment");
   });
 
   it("createShipment fails → refundPayment + revertInventory run in reverse order", async () => {

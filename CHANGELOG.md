@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-06-21
+
+Correctness + fork-DX patch. No API changes; existing workflows keep their behavior.
+
+### Fixed
+
+- **Cross-platform worker boot (all 5 templates)** — `worker.ts` resolved `workflowsPath` via `new URL("./workflows.js", import.meta.url).pathname`. On Windows `URL.pathname` returns a drive-prefixed path (`/C:/...`) that is not a valid filesystem path, so `Worker.create()` failed to find the workflow bundle. Switched to `fileURLToPath(new URL(...))` — the same ESM-correct helper the test files already use (and the one documented in the v0.1.0 anti-patterns). Forks on Windows now boot the worker.
+- **Version consistency** — all `package.json` files were `0.0.1` while the README badge said `v0.1.0` and the CI comment said `v0.1.1`. Aligned every workspace package + the README status line + the CI comment to `0.1.1`.
+
+### Added
+
+- **`HostedMemoryClient` coverage** — the per-request timeout / `AbortController` path is now tested (a hung backend aborts after `timeoutMs` and surfaces as a status-less `MemoryClientError`, which the activity layer treats as retryable, with the original `AbortError` preserved on `cause`). Also added `decide()` HTTP path tests (success + missing-id) and a `baseUrl` trailing-slash normalization test. Adapter suite 16 → 20 tests.
+- **Saga rollback assertion** — the all-compensations-succeed rollback path now explicitly asserts the persisted `mistake` learning takes the "All compensations succeeded" branch and does **not** carry the `compensation-failure` tag (that tag stays reserved for orders needing manual reconciliation).
+- **49/49 tests green** (was 45/45).
+
 ## [0.1.0] — 2026-05-24
 
 Initial public-shape release. All five templates live-verified against a self-hosted Temporal cluster on Docker. Pre-npm; clone or fork to use.

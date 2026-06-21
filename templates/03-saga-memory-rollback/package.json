@@ -1,6 +1,6 @@
 {
   "name": "@temporal-memory/t03-saga-memory-rollback",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "T03 — Saga workflow with compensations that run in reverse order on failure, plus a memory rollback trail for every failed step.",
   "license": "MIT",
   "private": true,

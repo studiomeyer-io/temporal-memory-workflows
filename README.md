@@ -6,7 +6,7 @@
 
 Durable [Temporal](https://temporal.io) workflow templates with [StudioMeyer Memory](https://memory.studiomeyer.io) integration. Built so AI agents and long-running pipelines have one shared brain across crashes, restarts, and weeks of execution.
 
-> **Status:** v0.1.0 — all 5 templates live-verified against a self-hosted cluster. 45/45 tests green. Pre-npm; clone or fork to use.
+> **Status:** v0.1.1 — all 5 templates live-verified against a self-hosted cluster. 49/49 tests green. Pre-npm; clone or fork to use.
 
 ## Why this exists
 

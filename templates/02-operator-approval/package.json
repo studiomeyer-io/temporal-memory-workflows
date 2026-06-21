@@ -1,6 +1,6 @@
 {
   "name": "@temporal-memory/t02-operator-approval",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "T02 — Human-in-the-loop approval workflow with durable signals, query, and memory audit trail.",
   "license": "MIT",
   "private": true,

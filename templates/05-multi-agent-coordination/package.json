@@ -1,6 +1,6 @@
 {
   "name": "@temporal-memory/t05-multi-agent-coordination",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "T05 — Parent workflow spawns N child agent workflows in parallel, each writes to memory with a shared coordination tag, parent aggregates + persists a synthesis.",
   "license": "MIT",
   "private": true,

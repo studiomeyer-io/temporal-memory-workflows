@@ -1,6 +1,6 @@
 {
   "name": "@temporal-memory/t04-recurring-memory-synthesis",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "T04 — Recurring workflow that aggregates the last N days of memory + writes a synthesis decision back. Scheduled via Temporal's Schedule API.",
   "license": "MIT",
   "private": true,

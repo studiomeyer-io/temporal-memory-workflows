@@ -140,6 +140,42 @@ describe("HostedMemoryClient", () => {
     expect(result).toEqual({ id: "lrn_999", ok: true });
   });
 
+  it("decide POSTs to nex_decide with bearer + returns the persisted id", async () => {
+    const fakeFetch = buildFetch([{ body: { data: { id: "dec_777" } } }]);
+    const memory = new HostedMemoryClient({
+      apiKey: "sk_decide",
+      baseUrl: "https://memory.example/",
+      fetch: fakeFetch as unknown as typeof fetch,
+    });
+    const result = await memory.decide({
+      title: "Adopt Temporal",
+      decision: "Use Temporal for durable execution",
+      confidence: 0.9,
+    });
+    expect(result).toEqual({ id: "dec_777", ok: true });
+
+    const [url, init] = fakeFetch.mock.calls[0]!;
+    expect(String(url)).toBe("https://memory.example/api/mcp/nex_decide");
+    const opts = init as RequestInit;
+    expect(opts.method).toBe("POST");
+    expect((opts.headers as Record<string, string>).authorization).toBe("Bearer sk_decide");
+    expect(JSON.parse(opts.body as string)).toMatchObject({
+      title: "Adopt Temporal",
+      decision: "Use Temporal for durable execution",
+    });
+  });
+
+  it("throws MemoryClientError when nex_decide omits the id", async () => {
+    const fakeFetch = buildFetch([{ body: { data: {} } }]);
+    const memory = new HostedMemoryClient({
+      apiKey: "sk_x",
+      fetch: fakeFetch as unknown as typeof fetch,
+    });
+    await expect(
+      memory.decide({ title: "t", decision: "d" }),
+    ).rejects.toThrow("missing id");
+  });
+
   it("wraps HTTP errors in MemoryClientError with status", async () => {
     const fakeFetch = buildFetch([{ status: 401, body: { error: "unauthorized" } }]);
     const memory = new HostedMemoryClient({
@@ -203,5 +239,55 @@ describe("HostedMemoryClient", () => {
       expect(err).toBeInstanceOf(MemoryClientError);
       expect((err as MemoryClientError).status).toBeUndefined();
     }
+  });
+
+  // The per-request timeout aborts the in-flight fetch via AbortController. The
+  // resulting AbortError is wrapped to a MemoryClientError WITHOUT status, so the
+  // activity-layer rethrowMemoryError treats a slow backend as retryable (Temporal
+  // backoff) rather than a non-retryable auth error. This wiring was previously
+  // untested even though timeoutMs is a public, tunable option.
+  it("aborts the request after timeoutMs and wraps the AbortError (no status → retryable)", async () => {
+    // fetch that resolves only if the request is aborted — mirrors a hung backend.
+    const hangingFetch = vi.fn((_input: unknown, init?: RequestInit) => {
+      return new Promise<Response>((_resolve, reject) => {
+        const signal = init?.signal;
+        if (!signal) {
+          reject(new Error("test expected an AbortSignal to be passed to fetch"));
+          return;
+        }
+        signal.addEventListener("abort", () => {
+          // Node's fetch rejects with a DOMException named "AbortError" on abort.
+          reject(new DOMException("The operation was aborted.", "AbortError"));
+        });
+      });
+    });
+    const memory = new HostedMemoryClient({
+      apiKey: "sk_x",
+      timeoutMs: 5,
+      fetch: hangingFetch as unknown as typeof fetch,
+    });
+
+    await expect(memory.search("slow")).rejects.toMatchObject({
+      name: "MemoryClientError",
+      status: undefined,
+    });
+    expect(hangingFetch).toHaveBeenCalledTimes(1);
+    // The original AbortError is preserved on `cause` for debuggability.
+    const err = await memory.search("slow").catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(MemoryClientError);
+    expect((err as MemoryClientError).cause).toBeInstanceOf(DOMException);
+  });
+
+  it("strips a trailing slash from baseUrl so the request URL is well-formed", async () => {
+    const fakeFetch = buildFetch([{ body: { data: { results: [] } } }]);
+    const memory = new HostedMemoryClient({
+      apiKey: "sk_x",
+      baseUrl: "https://memory.example/",
+      fetch: fakeFetch as unknown as typeof fetch,
+    });
+    await memory.search("q");
+    const [url] = fakeFetch.mock.calls[0]!;
+    // No double slash before /api — confirms the constructor's `.replace(/\/$/, "")`.
+    expect(String(url)).toBe("https://memory.example/api/mcp/nex_search");
   });
 });
