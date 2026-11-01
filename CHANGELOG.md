@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Dependency maintenance
+
+- Refresh Vitest to ^4.1.12 while retaining the existing Temporal SDK1.16.2 dependency set. The checked build/lint and 49 tests pass, including the actual Temporal test environment; all-dependency and production audits report zero findings.
+- The memory-adapter remains an unpublished source workspace; install and build from the repository root. No npm publication is included.
+
 ## [0.1.1] — 2026-06-21
 
 Correctness + fork-DX patch. No API changes; existing workflows keep their behavior.
