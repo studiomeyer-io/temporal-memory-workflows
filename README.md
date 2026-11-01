@@ -72,6 +72,8 @@ npm run worker &
 npm run client -- "What did we learn about Temporal yesterday?"
 ```
 
+`@temporal-memory/memory-adapter@0.1.1` is a local workspace package, not a published npm release. Install and build from this repository root as shown above; a standalone registry install of that version returns 404. No package publication is implied.
+
 ## Memory Backends
 
 The `memory-adapter` package supports multiple backends behind the same `MemoryClient` interface:
